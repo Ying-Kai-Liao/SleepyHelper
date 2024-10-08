@@ -1,86 +1,44 @@
-"use client";
-
-import { useState, useEffect, useRef } from 'react';
-import { Button } from "@/components/ui/button";
-import { Mic, StopCircle, Download, Play, Pause } from 'lucide-react';
+// Recorder.tsx
+import React, { useContext, useRef, useState } from 'react';
+import { MediaRecorderContext } from '@/contexts/MediaRecorderContext';
+import { Button } from '@/components/ui/button';
+import { Play, Pause, Download } from 'lucide-react';
 
 interface RecorderProps {
-  apiKey: string;
-  isRecording: boolean;
-  setAudioUrl: (url: string) => void;
-  onTranscriptionUpdate: (transcription: string) => void;
   onError: (error: string) => void;
-  language: string;
 }
 
-const Recorder: React.FC<RecorderProps> = ({ apiKey, isRecording, setAudioUrl, onTranscriptionUpdate, onError, language }) => {
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const [audioUrl, setLocalAudioUrl] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+const Recorder: React.FC<RecorderProps> = ({ onError }) => {
+  const {
+    audioUrl,
+    setAudioUrl,
+    isRecording,
+    language,
+    apiKey,
+    transcription,
+    setTranscription,
+  } = useContext(MediaRecorderContext)!;
+
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const permanentChunksRef = useRef<Blob[]>([]);
 
-  useEffect(() => {
-    let stream: MediaStream | null = null;
-
-    const startRecording = async () => {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorderRef.current = new MediaRecorder(stream);
-
-        mediaRecorderRef.current.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            chunksRef.current.push(event.data);
-            console.log('Audio chunk received:', event.data.size, 'bytes');
-          }
-        };
-
-        mediaRecorderRef.current.onstop = () => {
-          const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-          const url = URL.createObjectURL(audioBlob);
-          setLocalAudioUrl(url);
-          setAudioUrl(url);
-          console.log('Recording stopped, audio blob created');
-          sendFullAudio(audioBlob);
-        };
-
-        mediaRecorderRef.current.start();
-        console.log('Recording started');
-      } catch (error) {
-        console.error('Error starting recording:', error);
-        onError('無法開始錄音。請檢查您的麥克風權限。');
-      }
-    };
-
-    const stopRecording = () => {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
-        console.log('Recording stopped');
-        if (stream) {
-          stream.getTracks().forEach(track => track.stop());
-        }
-      }
-    };
-
-    if (isRecording) {
-      startRecording();
-    } else {
-      stopRecording();
+  // Function to send the final recording for transcription
+  const sendFinalRecording = async () => {
+    if (permanentChunksRef.current.length === 0) {
+      console.warn('No audio data to send');
+      return;
     }
 
-    return () => {
-      stopRecording();
-    };
-  }, [isRecording, setAudioUrl, onError]);
-
-  const sendFullAudio = async (audioBlob: Blob) => {
-    console.log('Sending full audio for transcription');
+    const audioBlob = new Blob(permanentChunksRef.current, {
+      type: 'audio/webm',
+    });
+    console.log('Sending final recording for transcription');
     const formData = new FormData();
-    formData.append('file', audioBlob, 'audio.webm');
+    formData.append('file', audioBlob, 'finalRecording.webm');
     formData.append('language', language);
 
     try {
-      console.log('Sending request to transcribe API');
       const response = await fetch('/api/transcribe', {
         method: 'POST',
         headers: {
@@ -94,20 +52,21 @@ const Recorder: React.FC<RecorderProps> = ({ apiKey, isRecording, setAudioUrl, o
       }
 
       const data = await response.json();
-      console.log('Transcription response received:', data);
+      console.log('Final transcription received:', data);
       if (data.transcription) {
-        onTranscriptionUpdate(data.transcription);
+        setTranscription(data.transcription);
       } else if (data.error) {
         throw new Error(data.error);
       } else {
-        throw new Error('Unknown error occurred');
+        throw new Error('Unknown error occurred during transcription');
       }
     } catch (error) {
-      console.error('Error sending audio:', error);
+      console.error('Error sending final recording:', error);
       onError(`轉錄音頻時出錯: ${error instanceof Error ? error.message : '未知錯誤'}`);
     }
   };
 
+  // Handle play/pause
   const handlePlayPause = () => {
     if (audioRef.current) {
       if (isPlaying) {
@@ -119,6 +78,7 @@ const Recorder: React.FC<RecorderProps> = ({ apiKey, isRecording, setAudioUrl, o
     }
   };
 
+  // Handle download
   const handleDownload = () => {
     if (audioUrl) {
       const a = document.createElement('a');
@@ -135,16 +95,29 @@ const Recorder: React.FC<RecorderProps> = ({ apiKey, isRecording, setAudioUrl, o
       {audioUrl && (
         <div className="mt-4 flex space-x-2">
           <Button onClick={handlePlayPause}>
-            {isPlaying ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+            {isPlaying ? (
+              <Pause className="w-4 h-4 mr-2" />
+            ) : (
+              <Play className="w-4 h-4 mr-2" />
+            )}
             {isPlaying ? '暫停' : '播放'}
           </Button>
           <Button onClick={handleDownload}>
             <Download className="w-4 h-4 mr-2" />
             下載
           </Button>
+          <Button onClick={sendFinalRecording}>
+            <Download className="w-4 h-4 mr-2" />
+            發送最終錄音
+          </Button>
         </div>
       )}
-      <audio ref={audioRef} src={audioUrl || undefined} onEnded={() => setIsPlaying(false)} />
+      <audio
+        ref={audioRef}
+        src={audioUrl || undefined}
+        onEnded={() => setIsPlaying(false)}
+        controls
+      />
     </div>
   );
 };

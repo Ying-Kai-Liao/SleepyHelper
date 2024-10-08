@@ -1,15 +1,15 @@
-import React from 'react';
+// Transcription.tsx
+import React, { useContext } from 'react';
+import { MediaRecorderContext } from '@/contexts/MediaRecorderContext';
 
-interface TranscriptionProps {
-  text: string;
-}
+const Transcription: React.FC = () => {
+  const { transcription } = useContext(MediaRecorderContext)!;
 
-const Transcription: React.FC<TranscriptionProps> = ({ text }) => {
   return (
     <div className="mt-6">
-      <h3 className="text-lg font-semibold mb-2 text-gray-700">轉錄:</h3>
-      <div className="p-4 bg-gray-100 rounded-md min-h-[100px] text-gray-800">
-        {text || '轉錄將在此處顯示...'}
+      <h2 className="text-xl font-semibold mb-4 text-gray-700">轉錄結果</h2>
+      <div className="bg-gray-100 p-4 rounded-md">
+        <p>{transcription || '尚無轉錄結果。'}</p>
       </div>
     </div>
   );
