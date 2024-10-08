@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       model: openAIFormData.get("model") as string,
       language: openAIFormData.get("language") as string,
       temperature: 0,
-      // prompt: "請使用繁體中文，搭配少量英文，並且盡量嚴謹。若是選擇為英文，請盡量使用美式拼音。如果聽不清楚不要使用這個回覆",
+      prompt: "如果聽不清楚，請回覆...",
     });
 
     console.log("Response received from OpenAI API");
