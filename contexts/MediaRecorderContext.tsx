@@ -23,6 +23,7 @@ interface MediaRecorderContextProps {
   setApiKey: (apiKey: string) => void;
   handleError: (error: string) => void;
   analyserNodeRef: React.MutableRefObject<AnalyserNode | null>;
+  loadAudioFromIndexedDB: () => Promise<void>;
 }
 
 export const MediaRecorderContext = createContext<
@@ -359,6 +360,7 @@ export const MediaRecorderProvider: React.FC<{ children: React.ReactNode }> = ({
         setApiKey,
         handleError,
         analyserNodeRef,
+        loadAudioFromIndexedDB,
       }}
     >
       {children}

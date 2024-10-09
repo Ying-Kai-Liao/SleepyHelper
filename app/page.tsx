@@ -31,7 +31,7 @@ export default function Home() {
   return (
     <MediaRecorderProvider>
       <div className="container mx-auto p-4 max-w-2xl">
-        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">即時語音轉錄</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Sleepy AI</h1>
         <Settings />
         <RecorderSection />
         <AudioVisualizer />
@@ -68,7 +68,7 @@ const Settings = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="en">English</SelectItem>
-            <SelectItem value="zh">繁體中文 / 简体中文</SelectItem>
+            <SelectItem value="zh">中文</SelectItem>
             {/* If differentiation is needed, handle it separately in the UI */}
           </SelectContent>
         </Select>
@@ -85,6 +85,7 @@ const RecorderSection = () => {
     stopRecording,
     transcription,
     handleError,
+    loadAudioFromIndexedDB,
   } = useContext(MediaRecorderContext)!;
 
   const handleStartRecording = () => {
@@ -106,6 +107,7 @@ const RecorderSection = () => {
     if (savedTranscription) {
       setTranscription(savedTranscription);
     }
+    // loadAudioFromIndexedDB();
   }, []);
 
   useEffect(() => {
