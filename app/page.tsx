@@ -31,7 +31,7 @@ export default function Home() {
   return (
     <MediaRecorderProvider>
       <div className="container mx-auto p-4 max-w-2xl">
-        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Sleepy AI</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Sleepy Helper</h1>
         <Settings />
         <RecorderSection />
         <AudioVisualizer />
